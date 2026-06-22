@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -77,14 +77,13 @@
 }
 
 *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
-html,body{height:100%;}
+html,body{height:100%; overflow:hidden; overscroll-behavior:none; background:#0b0814;}
 body{
   font-family:var(--font);
-  background:var(--bg0);
   color:#f3eff9;
-  overflow:hidden;
-  position:fixed; inset:0;
 }
+/* inputs must stay selectable so iOS shows the keyboard */
+input, textarea, select{ -webkit-user-select:text; user-select:text; -webkit-touch-callout:default; }
 
 /* phone frame so it looks app-like on desktop preview too */
 #app{
@@ -300,7 +299,7 @@ nav.tabbar{
 .amt-field input::-webkit-outer-spin-button,.amt-field input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
 .amt-field.shake{animation:shk .4s;}
 @keyframes shk{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
-.text-field{width:100%;background:var(--card);border:1px solid var(--card-brd);border-radius:14px;padding:13px 16px;color:#ffffff;font-family:var(--font);font-size:15px;outline:none;}
+.text-field{width:100%;background:var(--card);border:1px solid var(--card-brd);border-radius:14px;padding:13px 16px;color:#ffffff;font-family:var(--font);font-size:16px;outline:none;}
 .text-field::placeholder{color:rgba(255,255,255,.4);}
 .text-field::-webkit-calendar-picker-indicator{filter:invert(.7);}
 .cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
@@ -425,7 +424,7 @@ nav.tabbar{
 .note-card{cursor:pointer;}
 .note-preview{font-size:14.5px;line-height:1.5;color:var(--txt);white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .note-date{font-size:11.5px;color:var(--txt-faint);margin-top:8px;}
-.note-area{width:100%;min-height:230px;resize:none;background:var(--card);border:1px solid var(--card-brd);border-radius:14px;padding:14px 16px;color:#ffffff;font-family:var(--font);font-size:15px;line-height:1.55;outline:none;}
+.note-area{width:100%;min-height:230px;resize:none;background:var(--card);border:1px solid var(--card-brd);border-radius:14px;padding:14px 16px;color:#ffffff;font-family:var(--font);font-size:16px;line-height:1.55;outline:none;}
 .note-area::placeholder{color:rgba(255,255,255,.4);}
 .tip{font-size:12.5px;color:var(--txt-dim);line-height:1.5;padding:13px 15px;margin-top:8px;background:var(--card);border:1px solid var(--card-brd);border-radius:14px;}
 [data-go]{cursor:pointer;}
@@ -1495,7 +1494,6 @@ function openNoteSheet(id){
   document.getElementById("noteSheetTitle").textContent=t('newNote');
   document.getElementById("delNote").style.display=n?"block":"none";
   noteSheetEl.classList.add("open");
-  setTimeout(()=>{ const ta=document.getElementById("noteText"); ta.focus(); },280);
 }
 function closeNoteSheet(){ noteSheetEl.classList.remove("open"); }
 document.getElementById("noteSheetClose").addEventListener("click", closeNoteSheet);
@@ -1787,7 +1785,18 @@ document.querySelectorAll(".lang-toggle").forEach(b=> b.addEventListener("click"
 }));
 
 // --- BOOT ---
-function boot(){ applyLang(); requestAnimationFrame(()=> requestAnimationFrame(showProfile)); }
+function boot(){
+  // stop iOS from showing "AutoFill Contact" and autocorrect on our fields
+  document.querySelectorAll('input, textarea').forEach(el=>{
+    el.setAttribute('autocomplete','off');
+    el.setAttribute('autocorrect','off');
+    el.setAttribute('autocapitalize','off');
+    el.setAttribute('spellcheck','false');
+    if(el.type!=='date') el.setAttribute('data-1p-ignore','');
+  });
+  applyLang();
+  requestAnimationFrame(()=> requestAnimationFrame(showProfile));
+}
 if(document.readyState==="complete") boot();
 else window.addEventListener("load", boot);
 
