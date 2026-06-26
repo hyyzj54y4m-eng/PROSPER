@@ -151,7 +151,7 @@ input, textarea, select{ -webkit-user-select:text; user-select:text; -webkit-tou
 #main.show{opacity:1;}
 
 header.topbar{
-  padding:58px 22px 10px; display:flex; align-items:center; justify-content:space-between;
+  padding:calc(24px + env(safe-area-inset-top)) 22px 10px; display:flex; align-items:center; justify-content:space-between;
 }
 .hello{font-size:13px; color:var(--txt-faint);}
 .hello b{display:block; font-size:21px; color:var(--txt); font-weight:700; letter-spacing:-.4px; margin-top:2px;}
@@ -381,7 +381,7 @@ nav.tabbar{
 .lang-toggle{display:flex;align-items:center;background:var(--card);border:1px solid var(--card-brd);border-radius:20px;padding:3px;cursor:pointer;font-family:var(--font);flex:none;}
 .lang-toggle span{font-size:10px;font-weight:750;padding:4px 8px;border-radius:16px;color:var(--txt-faint);transition:.2s;line-height:1;white-space:nowrap;}
 .lang-toggle span.on{background:linear-gradient(90deg,var(--accent-3),var(--accent));color:#fff;}
-.pf-lang{position:absolute;top:18px;left:50%;transform:translateX(-50%);z-index:6;}
+.pf-lang{position:absolute;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:10;}
 .pf-head{margin-top:26px;}
 .pf-lang span{font-size:12.5px;padding:6px 15px;}
 
@@ -421,6 +421,18 @@ nav.tabbar{
 
 .debt-hero{background:linear-gradient(150deg, color-mix(in srgb, var(--bad) 38%, transparent), color-mix(in srgb, var(--accent) 14%, transparent));}
 .invest-hero{background:linear-gradient(150deg, color-mix(in srgb, var(--good) 32%, transparent), color-mix(in srgb, var(--accent) 14%, transparent));}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin:4px 2px 7px;}
+.cal-dow div{text-align:center;font-size:10px;color:var(--txt-faint);font-weight:700;letter-spacing:.3px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal-cell{min-height:52px;border-radius:11px;background:var(--card);border:1px solid var(--card-brd);padding:5px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;overflow:hidden;}
+.cal-cell.empty{background:transparent;border:none;}
+.cal-cell.pos{background:color-mix(in srgb,var(--good) 22%,transparent);border-color:color-mix(in srgb,var(--good) 42%,transparent);}
+.cal-cell.neg{background:color-mix(in srgb,var(--bad) 20%,transparent);border-color:color-mix(in srgb,var(--bad) 42%,transparent);}
+.cal-cell.today{outline:2px solid var(--accent-2);outline-offset:-1px;}
+.cal-day{font-size:12px;font-weight:650;color:var(--txt-dim);}
+.cal-net{font-size:10px;font-weight:800;line-height:1;}
+.cal-cell.pos .cal-net{color:var(--good);}
+.cal-cell.neg .cal-net{color:var(--bad);}
 .note-card{cursor:pointer;}
 .note-preview{font-size:14.5px;line-height:1.5;color:var(--txt);white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
 .note-date{font-size:11.5px;color:var(--txt-faint);margin-top:8px;}
@@ -446,7 +458,7 @@ nav.tabbar{
       <button class="pf-card" data-profile="jeff" data-theme="emerald">
         <div class="pf-av">J</div>
         <div class="pf-name">Jeffrey</div>
-        <div class="pf-lock">🔒</div>
+        <div class="pf-lock">›</div>
       </button>
       <button class="pf-card" data-profile="mom" data-theme="purple">
         <div class="pf-av">Y</div>
@@ -682,7 +694,7 @@ nav.tabbar{
 
 // --- PROFILES: the ONLY difference between the two apps ---
 const PROFILES = {
-  jeff: { name: "Jeffrey", theme: "emerald", key: "intentional_jeffrey", code: "8888" },
+  jeff: { name: "Jeffrey", theme: "emerald", key: "intentional_jeffrey", code: null },
   mom:  { name: "Yanderi", theme: "purple",  key: "intentional_yanderi", code: null },
   dad:  { name: "Eduardo", theme: "red",     key: "intentional_eduardo", code: null },
   gf:   { name: "Yen-kao", theme: "pink",    key: "intentional_yenkao",  code: null }
@@ -774,6 +786,7 @@ let activeTab = "home";
 let moneyView = "month";              // 'month' | 'week'
 let moneyTab = "activity";            // Money hub: 'activity' | 'recurring'
 let periodOffset = 0;                 // 0 = current; negative = past periods
+let calMonthOffset = 0;               // P&L calendar month offset
 let compassDebtOn = false;            // Compass: net-worth view includes debt when true
 let compassView = "overview";         // Compass hub: 'overview' | 'debt' | 'invest'
 let budgetView = "month";             // Budget tab: 'month' | 'weekly'
@@ -869,6 +882,7 @@ const T = {
     makePayment:"Make a payment", balanceWord:"Balance", paymentAmt:"Payment amount", logPayment:"Log payment", payTime:"Payoff time", moAbbr:"mo",
     tab_notes:"Notes", newNote:"New note", noNotes:"No notes yet", noNotesSub:"Write a letter, a goal, a reminder — anything to your future self.",
     notesPh:"Write a note to yourself…", delNoteConfirm:"Delete this note?",
+    calendar:"P&L", monthlyNet:"Monthly net", annualNet:"Annual net", dows:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
     words:["Budget","Grow","Prosper"]
   },
   es:{
@@ -930,6 +944,7 @@ const T = {
     makePayment:"Hacer un pago", balanceWord:"Saldo", paymentAmt:"Monto del pago", logPayment:"Registrar pago", payTime:"Tiempo de pago", moAbbr:"meses",
     tab_notes:"Notas", newNote:"Nueva nota", noNotes:"Aún no hay notas", noNotesSub:"Escribe una carta, una meta, un recordatorio — lo que sea para tu yo futuro.",
     notesPh:"Escribe una nota para ti…", delNoteConfirm:"¿Eliminar esta nota?",
+    calendar:"P&L", monthlyNet:"Neto mensual", annualNet:"Neto anual", dows:["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"],
     words:["Presupuesta","Crece","Prospera"]
   }
 };
@@ -1050,7 +1065,7 @@ function bindTxRows(){
 
 function renderHome(){
   const m=periodRange('month',0); const mt=totalsRange(m.start,m.end);
-  const liquid=liquidTotal(), debt=debtTotal(), net=liquid-debt;
+  const nw=netWorthCalc(); const liquid=nw.liquid, debt=nw.debt, net=nw.net;
   const monthName=cap(new Date().toLocaleString(loc(),{month:'long'}));
   const cats=(store.budgets&&store.budgets.cats)||{};
   let tBud=0,tSpent=0; CATS.out.forEach(c=>{ tBud+=cats[c.id]||0; tSpent+=spentInRange(c.id,m.start,m.end); });
@@ -1062,7 +1077,7 @@ function renderHome(){
     <div class="card hero compass-hero" data-go="compass">
       <div class="lbl">${t('netWorth')}</div>
       <div class="amt">${sfmt(net)}</div>
-      <div class="sub">${fmt(liquid)} ${t('liquidCash')} · ${fmt(debt)} ${t('debtWord')}</div>
+      <div class="sub">${sfmt(liquid)} ${t('liquidCash')} · ${fmt(nw.invested)} ${t('invested')} · ${fmt(debt)} ${t('debtWord')}</div>
     </div>
     <div class="card" data-go="money">
       <div class="mini-row">
@@ -1133,11 +1148,49 @@ function bindRecurring(){
   screenEl.querySelectorAll(".rec-del").forEach(x=> x.addEventListener("click",()=>{ if(confirm(t('delRecurring'))) deleteRecurring(x.dataset.id); }));
   document.getElementById("addRecBtn").addEventListener("click", openRecSheet);
 }
+function ymd(dt){ return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); }
+function dayNet(ds){ let n=0; store.transactions.forEach(x=>{ if(x.date===ds) n+= x.type==='in'?x.amount:-x.amount; }); return n; }
+function shortMoney(n){ n=Math.abs(n); if(n>=1000) return '$'+(n/1000).toFixed(n>=10000?0:1)+'k'; return '$'+Math.round(n); }
+function calendarSectionHTML(){
+  const now=new Date();
+  const ref=new Date(now.getFullYear(), now.getMonth()+calMonthOffset, 1);
+  const y=ref.getFullYear(), mo=ref.getMonth();
+  const startDay=new Date(y,mo,1).getDay();
+  const days=new Date(y,mo+1,0).getDate();
+  let monthNet=0; for(let d=1; d<=days; d++) monthNet+=dayNet(ymd(new Date(y,mo,d)));
+  let yearNet=0; store.transactions.forEach(x=>{ const dt=new Date(x.date+'T00:00:00'); if(dt.getFullYear()===y) yearNet+= x.type==='in'?x.amount:-x.amount; });
+  let cells='';
+  for(let i=0;i<startDay;i++) cells+='<div class="cal-cell empty"></div>';
+  const todayS=todayStr();
+  for(let d=1; d<=days; d++){
+    const ds=ymd(new Date(y,mo,d)); const net=dayNet(ds);
+    const cls=net>0?'pos':(net<0?'neg':''); const isToday=ds===todayS?' today':'';
+    cells+=`<div class="cal-cell ${cls}${isToday}"><div class="cal-day">${d}</div>${net!==0?`<div class="cal-net">${net>0?'+':'−'}${shortMoney(net)}</div>`:''}</div>`;
+  }
+  const dows=t('dows');
+  const label=cap(ref.toLocaleDateString(loc(),{month:'long',year:'numeric'}));
+  return `<div class="card"><div class="mini-row">
+      <div class="mini"><div class="t">${t('monthlyNet')}</div><div class="v ${monthNet<0?'out':'in'}">${sfmt(monthNet)}</div></div>
+      <div class="mini"><div class="t">${t('annualNet')}</div><div class="v ${yearNet<0?'out':'in'}">${sfmt(yearNet)}</div></div>
+    </div></div>
+    <div class="period-nav"><button class="pn-arrow" data-cstep="-1">‹</button><div class="pn-label">${label}</div><button class="pn-arrow" data-cstep="1" ${calMonthOffset>=0?'disabled':''}>›</button></div>
+    <div class="cal-dow">${dows.map(d=>`<div>${d}</div>`).join('')}</div>
+    <div class="cal-grid">${cells}</div>`;
+}
+function bindCalendar(){
+  screenEl.querySelectorAll(".pn-arrow").forEach(b=> b.addEventListener("click",()=>{ if(b.disabled) return; calMonthOffset+=parseInt(b.dataset.cstep,10); if(calMonthOffset>0) calMonthOffset=0; renderMoney(); }));
+}
 function renderMoney(){
-  const sub=`<div class="seg cmp-seg"><button data-mt="activity" class="${moneyTab==='activity'?'on':''}">${t('activity')}</button><button data-mt="recurring" class="${moneyTab==='recurring'?'on':''}">${t('recurring')}</button></div>`;
-  screenEl.innerHTML = sub + (moneyTab==='recurring' ? recurringSectionHTML() : activityHTML());
+  const sub=`<div class="seg cmp-seg"><button data-mt="activity" class="${moneyTab==='activity'?'on':''}">${t('activity')}</button><button data-mt="calendar" class="${moneyTab==='calendar'?'on':''}">${t('calendar')}</button><button data-mt="recurring" class="${moneyTab==='recurring'?'on':''}">${t('recurring')}</button></div>`;
+  let bodyHTML;
+  if(moneyTab==='recurring') bodyHTML=recurringSectionHTML();
+  else if(moneyTab==='calendar') bodyHTML=calendarSectionHTML();
+  else bodyHTML=activityHTML();
+  screenEl.innerHTML = sub + bodyHTML;
   screenEl.querySelectorAll(".cmp-seg button").forEach(b=> b.addEventListener("click",()=>{ moneyTab=b.dataset.mt; renderMoney(); }));
-  if(moneyTab==='recurring') bindRecurring(); else bindActivity();
+  if(moneyTab==='recurring') bindRecurring();
+  else if(moneyTab==='calendar') bindCalendar();
+  else bindActivity();
 }
 
 function renderSoon(tab){
@@ -1241,7 +1294,7 @@ function renderCompass(){
     const shown=compassDebtOn?nw.net:assets;
     body=`<div class="card hero compass-hero"><div class="lbl">${compassDebtOn?t('netWorth'):t('totalAssets')}</div><div class="amt">${sfmt(shown)}</div><div class="sub">${compassDebtOn?`${fmt(assets)} ${t('assetsWord')} − ${fmt(nw.debt)} ${t('debtWord')}`:t('assetsSub')}</div></div>
       <div class="seg debt-seg"><button data-debt="off" class="${!compassDebtOn?'on':''}">${t('withoutDebt')}</button><button data-debt="on" class="${compassDebtOn?'on':''}">${t('withDebt')}</button></div>
-      <div class="card"><div class="mini-row"><div class="mini"><div class="t">${t('liquidCash')}</div><div class="v in">${fmt(nw.liquid)}</div></div><div class="mini"><div class="t">${t('invested')}</div><div class="v in">${fmt(nw.invested)}</div></div><div class="mini"><div class="t">${t('debtWord')}</div><div class="v out">${fmt(nw.debt)}</div></div></div></div>
+      <div class="card"><div class="mini-row"><div class="mini"><div class="t">${t('liquidCash')}</div><div class="v ${nw.liquid<0?'out':'in'}">${sfmt(nw.liquid)}</div></div><div class="mini"><div class="t">${t('invested')}</div><div class="v in">${fmt(nw.invested)}</div></div><div class="mini"><div class="t">${t('debtWord')}</div><div class="v out">${fmt(nw.debt)}</div></div></div></div>
       <div class="card"><div class="mini-row"><div class="mini"><div class="t">${t('netWorth')}</div><div class="v">${sfmt(nw.net)}</div></div></div></div>`;
   }
   screenEl.innerHTML=`<div class="seg cmp-seg"><button data-cv="overview" class="${compassView==='overview'?'on':''}">${t('overview')}</button><button data-cv="debt" class="${compassView==='debt'?'on':''}">${t('debtWord')}</button><button data-cv="invest" class="${compassView==='invest'?'on':''}">${t('investing')}</button></div>${body}`;
